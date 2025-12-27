@@ -36,6 +36,7 @@ Expose the DeviceID alongside the storage-bin key so integrations can read and w
 
 ## Using the Field in API Requests
 - **Single-device command** (use when targeting one DeviceID): `POST /api/device/{id}/` with the DeviceID in the path and a command body matching the OpenAPI spec.
+  Include the `arrow` indicator supported by the [Voodoo Robotics REST API](https://voodoorobotics.com/rest-api/) to point toward the slot (for example `"up"`, `"left"`, `"topright"`, or `"bottomleft"`).
   ```http
   POST /api/device/D4E825:8B665D/
   {
@@ -45,7 +46,8 @@ Expose the DeviceID alongside the storage-bin key so integrations can read and w
     "line2": "Aisle 3",
     "sound": "beep",
     "seconds": 10,
-    "color": "r"
+    "color": "red",
+    "arrow": "up"
   }
   ```
 - **Batch commands** (send multiple DeviceIDs in one request): `POST /api/devices/` with an array of command arrays.
@@ -60,14 +62,16 @@ Expose the DeviceID alongside the storage-bin key so integrations can read and w
         "line2": "Aisle 3",
         "sound": "beep",
         "seconds": 10,
-        "color": "r"
+        "color": "red",
+        "arrow": "topright"
       },
       {
         "deviceid": "E8F297:F3F2F3",
         "command": "display",
         "color": "blue",
         "line1": "Station 5",
-        "line2": "Processing"
+        "line2": "Processing",
+        "arrow": "left"
       }
     ]
   ]
