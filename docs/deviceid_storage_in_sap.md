@@ -5,7 +5,7 @@ Use a DeviceID to map physical putwall slots, carts, or shuttle positions to SAP
 ## Field Definition and Placement
 - **Field name:** `ZDEVICE_ID` (CHAR30, uppercase). Use a domain so validation is consistent across environments.
 - **Table include:** Append the field to the customer include on the bin master (`CI_LAGP` for EWM; `CI_LAGP`/`CI_LAGP_APP` for classic WM). This keeps the field near other location attributes like storage type and section.
-- **Uniqueness:** Enforce uniqueness per warehouse number so one DeviceID never points to multiple bins. Add a check table or a validation in the maintenance transaction/BAdI.
+- **Uniqueness:** Default to uniqueness per warehouse number when each hardware endpoint must map to one slot. If a single device legitimately services multiple adjacent bins, allow controlled duplicates—make the check table/validation configurable by storage type or zone so you can opt in to one-to-many mapping only where required.
 
 ## Steps to Add the Field
 1. **Create a domain** `ZDEVICE_ID` (type CHAR, length 30, uppercase, conversion routine ALPHA optional).
@@ -65,3 +65,4 @@ Expose the DeviceID alongside the storage-bin key so integrations can read and w
 - Validate DeviceID format in the domain (uppercase, no spaces) to avoid API payload mismatches.
 - Log changes in a change document object if you need auditability for automation devices.
 - Mirror the DeviceID in automation middleware only after SAP confirms the update (check the PATCH response) to avoid drift.
+- Document where duplicates are allowed (storage types/zones) so downstream systems can handle one-to-many mappings without conflict.
