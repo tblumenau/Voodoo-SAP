@@ -1,35 +1,35 @@
 # Minimal-Change Integration Strategy for Voodoo SAP
 
-This note is the companion to the [ECC→S/4HANA table cross-reference](./voodoo_sap_tables.md). Think of it as a map that helps you pick one small, sturdy place in SAP to read from (and occasionally write to) so you can plug in Voodoo without breaking every time SAP is patched. The tone here is intentionally beginner-friendly: if you are newer to SAP, follow the examples and you will stay on the happy path.
+This note complements the [ECC→S/4HANA table cross-reference](./voodoo_sap_tables.md). It identifies stable tables and CDS views you can rely on so Voodoo integrations remain steady across SAP patches. Follow the examples to anchor your read and write points in predictable places.
 
-## How to Pick Your Anchor Point
-Start by looking for tables or CDS views that already carry the meaning you need. Line-item hubs like `MATDOC` or semantic views like `I_OutboundDeliveryItem` change slowly because SAP treats them as canonical. Attach to the highest-level object you can live with. For instance, deliveries are more stable than warehouse tasks; production orders are steadier than bin movements. Only drop down a level when you truly need that detail.
+## How to Choose an Anchor Point
+Begin with tables or CDS views that already represent the business meaning you need. Line-item hubs like `MATDOC` or semantic views like `I_OutboundDeliveryItem` are treated as canonical and change slowly. Prefer the most aggregated object that meets the requirement: deliveries remain steadier than warehouse tasks, and production orders shift less than bin movements. Move to lower-level objects only when that detail is required.
 
-Where possible, let SAP do the heavy lifting. If availability checks, ATP, or goods issue posting already happen in a table or view, read from there instead of re-creating that logic in your code. When you must send something back, choose a single writable object for that flow—`MATDOC` for goods movements or `/SCWM/ORDIM_O` for warehouse task confirmations—and keep the rest read-only. That pattern keeps your integration thin and predictable.
+Reuse SAP logic wherever it already exists. If availability checks, ATP, or goods issue posting appear in a table or view, read from that source instead of rebuilding the logic. When you must write back, pick one object for that flow—`MATDOC` for goods movements or `/SCWM/ORDIM_O` for warehouse task confirmations—and keep the rest read-only. This keeps integrations narrow and easier to maintain.
 
 ## Picking the Right Spot for Common Goals
-Imagine you are deciding where to plug in for a particular outcome. The guidance below walks through the thinking process instead of throwing a checklist at you.
+Use the scenarios below to match your integration point to the outcome you need.
 
 ### Shipping to Customers (delivery creation and status)
-Start with `LIKP` or the `I_OutboundDelivery` view for delivery headers, and `LIPS` or `I_OutboundDeliveryItem` for items. These objects already know about picking status, staging, and goods issue, so you can trigger your workflows without tracking bins yourself. Stay here if you just need to kick off picking or manage freight stages. If you are running picking waves and need to see every bin movement, add `/SCWM/ORDIM_O` so you can follow warehouse tasks in detail.
+Use `LIKP` or the `I_OutboundDelivery` view for delivery headers, and `LIPS` or `I_OutboundDeliveryItem` for items. These sources include picking status, staging, and goods issue, so you can trigger workflows without modeling bins. Stay here for delivery-driven flows. If you need bin-level movements—for example, during picking waves—supplement with `/SCWM/ORDIM_O` to follow warehouse tasks.
 
 ### Discrete Picking to a Cart or Tote
-Point at `/SCWM/ORDIM_O` to read the open warehouse tasks. You get source bin, destination bin, and quantities without computing stock placement yourself. If you need to see the exact quant in a bin, pair it with `/SCWM/AQUA`. When you confirm the pick, write back through the same task table or view so SAP remains the system of record.
+Use `/SCWM/ORDIM_O` to read open warehouse tasks. It provides source bin, destination bin, and quantities without computing stock placement yourself. If you need to see the exact quant in a bin, pair it with `/SCWM/AQUA`. Confirm picks through the same task table or view so SAP remains the system of record.
 
 ### Putwall or Sortation by Order
-Use `I_OutboundDeliveryItem` to understand what each order expects, then watch `/SCWM/ORDIM_C` for the tasks that move items into consolidation slots. Delivery-item status tells you when to close a slot, while task confirmations make reliable signals for lights or put-to-wall events. You avoid touching the picking logic but still know what landed where.
+Read `I_OutboundDeliveryItem` to determine each order’s expected items, then monitor `/SCWM/ORDIM_C` for tasks that move items into consolidation slots. Delivery-item status indicates when to close a slot, and task confirmations signal put-to-wall events. This keeps pick execution untouched while still tracking where items landed.
 
 ### Kitting Parts for Manufacturing
-Read `I_ProductionOrderComponent` (the CDS successor to `RESB`) to see required versus withdrawn quantities. SAP already tracks shortages and backflush, so you get a clean view of what is still owed. If you also direct the physical pick, combine that data with `/SCWM/ORDIM_O` tasks, but post the actual goods issue through `MATDOC` using 261 movement types. That keeps posting logic in SAP and keeps your integration simple.
+Read `I_ProductionOrderComponent` (the CDS successor to `RESB`) to see required versus withdrawn quantities. SAP tracks shortages and backflush, so you get an accurate picture of remaining needs. If you direct the physical pick, combine that data with `/SCWM/ORDIM_O` tasks, but post the goods issue through `MATDOC` using 261 movement types. Posting through SAP keeps the integration straightforward.
 
 ### Replenishing Pick Faces
-Filter `/SCWM/ORDIM_O` down to replenishment tasks to see what SAP wants moved. For a snapshot of what is currently in a bin, read `/SCWM/AQUA`. With those two pieces you can sequence the work for operators while SAP handles the planning and stock figures.
+Filter `/SCWM/ORDIM_O` to replenishment tasks to see what SAP plans to move. For a snapshot of bin contents, read `/SCWM/AQUA`. With those two sources you can sequence operator work while SAP manages planning and stock balances.
 
 ### Inventory Visibility Without Control
-If you only need to know what stock exists, stick to `I_StockOverview` or `MATDOC`. These are authoritative for stock positions and do not pull you into warehouse-task complexity. Avoid task tables unless you must account for in-flight moves.
+If you only need to know what stock exists, use `I_StockOverview` or `MATDOC`. These are authoritative for stock positions and avoid warehouse-task complexity. Pull in task tables only when you must account for in-flight moves.
 
 ## Keeping the Integration Lightweight
-Adopt a “read first” posture by default: pull data via RFC/ODATA or CDS views, and only write when SAP requires a confirmation or status. Choose one choke point per process leg—delivery, warehouse task, goods movement—so that a change in SAP’s internal strategies does not cascade through your code. Drive your workflow off SAP status fields (delivery picking status, warehouse task status, confirmation flags) instead of creating parallel state machines. Configure plant filters, movement types, and warehouse numbers rather than hard-coding bin strategies; let SAP’s master data carry the rules. When in doubt, favor the CDS view that matches the business object name (`I_OutboundDeliveryItem`, `I_ProductionOrderComponent`) for a forward-compatible API surface.
+Default to reading data via RFC/ODATA or CDS views, and write only when SAP requires a confirmation or status. Choose one integration point per process leg—delivery, warehouse task, goods movement—so changes in SAP internals do not ripple through your code. Drive workflows from SAP status fields (delivery picking status, warehouse task status, confirmation flags) instead of building parallel state machines. Configure plant filters, movement types, and warehouse numbers rather than hard-coding bin strategies; keep the rules in SAP master data. When deciding between sources, prefer the CDS view that matches the business object name (`I_OutboundDeliveryItem`, `I_ProductionOrderComponent`) because those views stay stable across releases.
 
 ## Quick Reference
 If you need a fast pointer after reading the narratives above, use this as a memory jog:
@@ -40,4 +40,4 @@ If you need a fast pointer after reading the narratives above, use this as a mem
 - Component issue tracking: `I_ProductionOrderComponent` plus `MATDOC` (BWART=261)
 - Stock snapshots: `I_StockOverview` or `MATDOC`
 
-Use this guide to select the smallest, strongest integration point for your scenario, minimize custom logic, and keep future SAP upgrades from turning into rewrites.
+Use this guide to pick concise integration points, minimize custom logic, and reduce rewrites during SAP upgrades.
