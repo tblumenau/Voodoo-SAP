@@ -2,6 +2,8 @@
 
 Use a DeviceID to map physical putwall slots, carts, or shuttle positions to SAP storage bins so API calls can target a single, unambiguous location. The DeviceID should live on the bin master (`/SCWM/LAGP` for EWM or `LAGP` for classic WM) and be exposed through a CDS view/OData API for reads and updates.
 
+> **Optional:** You can skip storing DeviceIDs in SAP entirely. The Voodoo Big Block server can map bins/locations to DeviceIDs using location names (see [Location Aliases](https://voodoorobotics.com/locations/)). If you choose that approach, use the [Location Alias API](https://voodoorobotics.com/location-alias-api/) and send commands by location name; SAP then only needs to expose the location identifier, not the DeviceID. Pick the option—SAP-managed DeviceIDs or Big Block–managed location aliases—that best fits your operational ownership model.
+
 ## Field Definition and Placement
 - **Field name:** `ZDEVICE_ID` (CHAR30, uppercase). Use a domain so validation is consistent across environments.
 - **Table include:** Append the field to the customer include on the bin master (`CI_LAGP` for EWM; `CI_LAGP`/`CI_LAGP_APP` for classic WM). This keeps the field near other location attributes like storage type and section.
