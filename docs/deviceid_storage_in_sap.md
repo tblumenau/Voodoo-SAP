@@ -35,29 +35,42 @@ Expose the DeviceID alongside the storage-bin key so integrations can read and w
 - **Authorizations:** Include the service in an `IWSG`/`IWSV` role and the underlying table in an authorization group so handhelds can read/write the field.
 
 ## Using the Field in API Requests
-- **Read a bin by DeviceID:**
+- **Single-device command** (use when targeting one DeviceID): `POST /api/device/{id}/` with the DeviceID in the path and a command body matching the OpenAPI spec.
   ```http
-  GET /sap/opu/odata/sap/ZI_STORAGEBINDEVICE_CDS/ZI_StorageBinDevice?
-      $filter=WarehouseNumber eq '171' and DeviceID eq 'PUTWALL-07'
-      &$select=WarehouseNumber,StorageType,StorageBin,DeviceID
-  ```
-- **Update the DeviceID for an existing bin:**
-  ```http
-  PATCH /sap/opu/odata/sap/ZI_STORAGEBINDEVICE_CDS/ZI_StorageBinDevice(
-        WarehouseNumber='171',StorageType='PW1',StorageBin='ROW-01-07')
+  POST /api/device/D4E825:8B665D/
   {
-    "DeviceID": "PUTWALL-07"
+    "deviceid": "D4E825:8B665D",
+    "command": "flash",
+    "line1": "Pick Item",
+    "line2": "Aisle 3",
+    "sound": "beep",
+    "seconds": 10,
+    "color": "r"
   }
   ```
-- **Create a new bin with DeviceID** (if your service allows creates):
+- **Batch commands** (send multiple DeviceIDs in one request): `POST /api/devices/` with an array of command arrays.
   ```http
-  POST /sap/opu/odata/sap/ZI_STORAGEBINDEVICE_CDS/ZI_StorageBinDevice
-  {
-    "WarehouseNumber": "171",
-    "StorageType": "PW1",
-    "StorageBin": "ROW-01-07",
-    "DeviceID": "PUTWALL-07"
-  }
+  POST /api/devices/
+  [
+    [
+      {
+        "deviceid": "D4E825:8B665D",
+        "command": "flash",
+        "line1": "Pick Item",
+        "line2": "Aisle 3",
+        "sound": "beep",
+        "seconds": 10,
+        "color": "r"
+      },
+      {
+        "deviceid": "E8F297:F3F2F3",
+        "command": "display",
+        "color": "blue",
+        "line1": "Station 5",
+        "line2": "Processing"
+      }
+    ]
+  ]
   ```
 
 ### Integration Tips
