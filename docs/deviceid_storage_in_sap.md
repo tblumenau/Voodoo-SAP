@@ -15,6 +15,14 @@ Use a DeviceID to map physical putwall slots, carts, or shuttle positions to SAP
    - For S/4HANA Cloud, use *Custom Fields and Logic* to add the field to the **Logistics: Storage Bin** business context and enable the *UI* toggle for relevant apps.
 4. **Transport** the domain and append structure so all systems share the same field name and semantics.
 
+### Let end users change DeviceID when hardware is replaced
+DeviceIDs inevitably change when a device is damaged or swapped. Provide a simple, controlled UI so warehouse staff can update the field without a developer transport:
+
+- **SAP GUI (Embedded EWM):** Add `ZDEVICE_ID` to the storage-bin maintenance screen (`/SCWM/R_LG01`) and ensure the field status is *Input* for change mode. Create a Z-transaction variant (e.g., `ZLAGP_DEVICE`) that jumps straight to the bin and highlights the DeviceID field for edits.
+- **Fiori / S/4HANA Cloud:** In *Custom Fields and Logic*, expose `ZDEVICE_ID` to the **Logistics: Storage Bin** business context and toggle *UI* so it appears on the storage-bin object page. Add the tile to a dedicated role (e.g., *Warehouse Device Maintenance*) that grants display/change on `/SCWM/LAGP` or `LAGP`.
+- **Authorizations:** Include the field in your role testing so only designated users can change it while others remain display-only.
+- **Process note:** Train users to update DeviceID immediately after a replacement so downstream automation and pick-to-light commands target the correct hardware.
+
 ## API Enablement
 Expose the DeviceID alongside the storage-bin key so integrations can read and write it.
 
