@@ -60,30 +60,28 @@ Expose the DeviceID alongside the storage-bin key so integrations can read and w
     "arrow": "up"
   }
   ```
-- **Batch commands** (send multiple DeviceIDs in one request): `POST /api/devices/` with an array of command arrays.
+- **Batch commands** (send multiple DeviceIDs in one request): `POST /api/devices/` with an array of commands.
   ```http
   POST /api/devices/
   [
-    [
-      {
-        "deviceid": "D4E825:8B665D",
-        "command": "flash",
-        "line1": "Pick Item",
-        "line2": "Aisle 3",
-        "sound": "beep",
-        "seconds": 10,
-        "color": "red",
-        "arrow": "topright"
-      },
-      {
-        "deviceid": "E8F297:F3F2F3",
-        "command": "display",
-        "color": "blue",
-        "line1": "Station 5",
-        "line2": "Processing",
-        "arrow": "left"
-      }
-    ]
+    {
+      "deviceid": "D4E825:8B665D",
+      "command": "flash",
+      "line1": "Pick Item",
+      "line2": "Aisle 3",
+      "sound": "beep",
+      "seconds": 10,
+      "color": "red",
+      "arrow": "topright"
+    },
+    {
+      "deviceid": "E8F297:F3F2F3",
+      "command": "display",
+      "color": "blue",
+      "line1": "Station 5",
+      "line2": "Processing",
+      "arrow": "left"
+    }
   ]
   ```
 
